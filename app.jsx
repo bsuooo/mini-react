@@ -1,11 +1,17 @@
 import React from './react/react.js'
 
-const App = () => {
-  return <div id="app">
-    <span>
-    react-app
-    </span>
-  </div>
+const Counter = ({count}) => {
+  return <div>{count}</div>
 }
 
-export default App()
+const App = () => {
+  return (<div id="app">
+    <Counter count={10} />
+    <span>
+      react-app
+      <Counter count={20} />
+    </span>
+  </div>)
+}
+
+export default App
