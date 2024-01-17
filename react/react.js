@@ -22,28 +22,52 @@ const createDom = (type) => {
   return type === 'TEXT_ELEMENT' ? document.createTextNode('') : document.createElement(type)
 }
 
-const updateProps = (dom, props) => {
-  props && Object.keys(props).forEach(key => {
+const updateProps = (dom, nextProps, oldProps = {}) => {
+  // 删除旧的props
+  dom && Object.keys(oldProps).forEach(key => {
+    if (key !== 'children' && !key.startsWith('on') && !nextProps[key]) {
+      dom.removeAttribute(key)
+    }
+  })
+  nextProps && Object.keys(nextProps).forEach(key => {
     if (key.startsWith('on')) {
       const event = key.slice(2).toLowerCase()
-      dom.addEventListener(event, props[key])
+      dom.addEventListener(event, nextProps[key])
     }
-    if (key !== 'children' && !key.startsWith('on')) {
-      dom[key] = props[key]
+    if (key !== 'children' && !key.startsWith('on') && dom) {
+      dom[key] = nextProps[key]
     }
   })
 }
 
-const initChildren = (fiber, children) => {
+const reconcileChildren = (fiber, children) => {
   let prev = null
+  let oldFiber = fiber.alternate?.child
   children.forEach((child, index) => {
-    const newFiber = {
-      dom: child.dom,
-      parent: fiber,
-      child: null,
-      sibling: null,
-      type: child.type,
-      props: child.props
+    const isSameType = fiber && oldFiber && child.type === oldFiber.type
+    let newFiber
+    if (isSameType) {
+      newFiber = {
+        dom: oldFiber?.dom,
+        parent: fiber,
+        child: null,
+        sibling: null,
+        type: child.type,
+        props: child.props,
+        alternate: oldFiber,
+        effectTag: 'UPDATE'
+      }
+    } else {
+      newFiber = {
+        dom: child.dom,
+        parent: fiber,
+        child: null,
+        sibling: null,
+        type: child.type,
+        props: child.props,
+        alternate: null,
+        effectTag: 'PLACEMENT'
+      }
     }
     if (index === 0) {
       fiber.child = newFiber
@@ -51,11 +75,12 @@ const initChildren = (fiber, children) => {
       prev.sibling = newFiber
     }
     prev = newFiber
+    oldFiber = oldFiber?.sibling || null
   })
 }
 
 const commitRoot = () => {
-  commitWork(root.child)
+  commitWork(wipRoot.child)
 }
 
 const commitWork = (fiber) => {
@@ -66,8 +91,11 @@ const commitWork = (fiber) => {
   while (parentFiber && !parentFiber.dom) {
     parentFiber = parentFiber.parent
   }
-  if (parentFiber && fiber.dom) {
+  if (parentFiber && fiber.dom && fiber.effectTag === 'PLACEMENT') {
     parentFiber.dom.appendChild(fiber.dom)
+  }
+  if (fiber.dom && fiber.effectTag === 'UPDATE') {
+    updateProps(fiber.dom, fiber.props, fiber.alternate.props)
   }
   commitWork(fiber.child)
   commitWork(fiber.sibling)
@@ -77,7 +105,7 @@ const updateFunctionComponent = (fiber) => {
   const children = [fiber.type(fiber.props)]
 
   // 创建链表
-  initChildren(fiber, children)
+  reconcileChildren(fiber, children)
 }
 
 const updateHostComponent = (fiber) => {
@@ -87,7 +115,7 @@ const updateHostComponent = (fiber) => {
   // 更新props
   updateProps(fiber.dom, fiber.props)
   // 创建链表
-  initChildren(fiber, fiber.props.children)
+  reconcileChildren(fiber, fiber.props.children)
 }
 
 const perWorkOfUnit = (fiber) => {
@@ -121,9 +149,10 @@ const workLoop = (IdleDeadline) => {
     nextUnitOfWork = perWorkOfUnit(nextUnitOfWork)
     shouldYield = IdleDeadline.timeRemaining() > 0
   }
-  if (!nextUnitOfWork && root) {
+  if (!nextUnitOfWork && wipRoot) {
     commitRoot()
-    root = null
+    currentRoot = wipRoot
+    wipRoot = null
   }
   requestIdleCallback(workLoop)
 }
@@ -133,24 +162,25 @@ requestIdleCallback(workLoop)
 
 // 更新
 const update = () => {
-  nextUnitOfWork = {
-    dom: oldRoot.dom,
-    props: oldRoot.props,
+  wipRoot = {
+    dom: currentRoot.dom,
+    props: currentRoot.props,
+    alternate: currentRoot
   }
+  nextUnitOfWork = wipRoot
 }
 
-let root = null
-let oldRoot = null
+// work in progress wipRoot
+let wipRoot = null
+let currentRoot = null
 const render = (el, container) => {
-  nextUnitOfWork = {
+  wipRoot = {
     dom: container,
     props: {
       children: [el],
     },
   }
-
-  oldRoot = nextUnitOfWork
-  root = nextUnitOfWork
+  nextUnitOfWork = wipRoot
 }
 
 const React = {

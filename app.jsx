@@ -1,19 +1,20 @@
 import React from './react/react.js'
 
 let count = 0
+let props = {id: 'id'}
 
 function handleClick() {
   count ++
-  console.log(count);
+  props = {}
   React.update()
 }
 
 const Counter = () => {
-  return <button onClick={handleClick}>count ++</button>
+  return <button onClick={handleClick}>click ++</button>
 }
 
 const App = () => {
-  return (<div id="app">
+  return (<div {...props}>
     <Counter count={10} />
     <span>
       key: {count}
