@@ -1,15 +1,22 @@
 import React from './react/react.js'
 
-const Counter = ({count}) => {
-  return <div>{count}</div>
+let count = 0
+
+function handleClick() {
+  count ++
+  console.log(count);
+  React.update()
+}
+
+const Counter = () => {
+  return <button onClick={handleClick}>count ++</button>
 }
 
 const App = () => {
   return (<div id="app">
     <Counter count={10} />
     <span>
-      react-app
-      <Counter count={20} />
+      key: {count}
     </span>
   </div>)
 }

@@ -24,7 +24,11 @@ const createDom = (type) => {
 
 const updateProps = (dom, props) => {
   props && Object.keys(props).forEach(key => {
-    if (key !== 'children') {
+    if (key.startsWith('on')) {
+      const event = key.slice(2).toLowerCase()
+      dom.addEventListener(event, props[key])
+    }
+    if (key !== 'children' && !key.startsWith('on')) {
       dom[key] = props[key]
     }
   })
@@ -127,7 +131,16 @@ const workLoop = (IdleDeadline) => {
 // 开始渲染子节点
 requestIdleCallback(workLoop)
 
+// 更新
+const update = () => {
+  nextUnitOfWork = {
+    dom: oldRoot.dom,
+    props: oldRoot.props,
+  }
+}
+
 let root = null
+let oldRoot = null
 const render = (el, container) => {
   nextUnitOfWork = {
     dom: container,
@@ -135,12 +148,15 @@ const render = (el, container) => {
       children: [el],
     },
   }
+
+  oldRoot = nextUnitOfWork
   root = nextUnitOfWork
 }
 
 const React = {
   createElement,
-  render
+  render,
+  update
 }
 
 export default React
