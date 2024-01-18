@@ -40,10 +40,13 @@ const updateProps = (dom, nextProps, oldProps = {}) => {
   })
 }
 
+const deletions = []
+
 const reconcileChildren = (fiber, children) => {
   let prev = null
   let oldFiber = fiber.alternate?.child
-  children.forEach((child, index) => {
+
+  children && children.forEach((child, index) => {
     const isSameType = fiber && oldFiber && child.type === oldFiber.type
     let newFiber
     if (isSameType) {
@@ -68,6 +71,10 @@ const reconcileChildren = (fiber, children) => {
         alternate: null,
         effectTag: 'PLACEMENT'
       }
+      if (oldFiber) {
+        // removeOldFiber(oldFiber)
+        deletions.push(oldFiber)
+      }
     }
     if (index === 0) {
       fiber.child = newFiber
@@ -79,7 +86,25 @@ const reconcileChildren = (fiber, children) => {
   })
 }
 
+const commitDelete = (fiber) => {
+  if (!fiber) {
+    return
+  }
+  if (fiber.dom) {
+    let parentFiber = fiber?.parent
+    while (parentFiber && !parentFiber.dom) {
+      parentFiber = parentFiber.parent
+    }
+    if (parentFiber.dom) {
+      parentFiber.dom.removeChild(fiber.dom)
+    }
+  }
+  commitDelete(fiber.child)
+}
+
 const commitRoot = () => {
+  deletions.forEach(commitDelete)
+  deletions.length = 0
   commitWork(wipRoot.child)
 }
 
@@ -115,7 +140,7 @@ const updateHostComponent = (fiber) => {
   // 更新props
   updateProps(fiber.dom, fiber.props)
   // 创建链表
-  reconcileChildren(fiber, fiber.props.children)
+  reconcileChildren(fiber, fiber.props?.children)
 }
 
 const perWorkOfUnit = (fiber) => {
