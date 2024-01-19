@@ -16,6 +16,7 @@ import React from './react/react.js'
 let showFoo = false
 
 function changeShowFoo() {
+  console.log(1);
   showFoo = !showFoo
   React.update()
 }
@@ -29,21 +30,23 @@ function Bar() {
 }
 
 // const App = () => {
-//   const foo = <div onClick={changeShowFoo}>foo</div>
-//   // const bar = <div onClick={changeShowFoo}>bar</div>
+//   const foo = <div>foo</div>
+//   const bar = <div>bar</div>
 //   return (
 //     <div id="app">
+//       {showFoo ? foo : bar} 
+//       {showFoo ? foo : bar} 
 //       <button onClick={changeShowFoo}>change</button>
-//       {showFoo ? <Foo></Foo>: <Bar></Bar>} 
 //     </div>
 //   )
 // }
 
 const App = () => {
   return (
-    <div id="app">
-      {showFoo && <Foo></Foo>}
-      {!showFoo && <Bar></Bar>}
+    <div id="app" onClick={changeShowFoo}>
+      <Foo></Foo>
+      <Foo></Foo>
+      <Foo></Foo>
     </div>
   )
 }
