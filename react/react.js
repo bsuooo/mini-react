@@ -32,6 +32,7 @@ const updateProps = (dom, nextProps, oldProps = {}) => {
   nextProps && Object.keys(nextProps).forEach(key => {
     if (key.startsWith('on')) {
       const event = key.slice(2).toLowerCase()
+      dom.removeEventListener(event, oldProps[key])
       dom.addEventListener(event, nextProps[key])
     }
     if (key !== 'children' && !key.startsWith('on') && dom) {
@@ -48,6 +49,7 @@ const reconcileChildren = (fiber, children) => {
 
   children && children.forEach((child, index) => {
     const isSameType = child?.type === oldFiber?.type
+    console.log(child, oldFiber);
     let newFiber
     if (isSameType) {
       newFiber = {
@@ -84,6 +86,11 @@ const reconcileChildren = (fiber, children) => {
     prev = newFiber
     oldFiber = oldFiber?.sibling || null
   })
+  // 检测有没有兄弟节点需要删除 新的已经遍历完了, 看看旧的有没有剩的
+  while (oldFiber) {
+    deletions.push(oldFiber);
+    oldFiber = oldFiber.sibling
+  }
 }
 
 const commitDelete = (fiber) => {
@@ -120,7 +127,7 @@ const commitWork = (fiber) => {
     parentFiber.dom.appendChild(fiber.dom)
   }
   if (fiber.dom && fiber.effectTag === 'UPDATE') {
-    updateProps(fiber.dom, fiber.props, fiber.alternate.props)
+    updateProps(fiber.dom, fiber.props, fiber.alternate?.props)
   }
   commitWork(fiber.child)
   commitWork(fiber.sibling)
