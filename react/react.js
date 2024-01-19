@@ -49,7 +49,6 @@ const reconcileChildren = (fiber, children) => {
 
   children && children.forEach((child, index) => {
     const isSameType = child?.type === oldFiber?.type
-    console.log(child, oldFiber);
     let newFiber
     if (isSameType) {
       newFiber = {
@@ -63,15 +62,17 @@ const reconcileChildren = (fiber, children) => {
         effectTag: 'UPDATE'
       }
     } else {
-      newFiber = {
-        dom: child.dom,
-        parent: fiber,
-        child: null,
-        sibling: null,
-        type: child.type,
-        props: child.props,
-        alternate: null,
-        effectTag: 'PLACEMENT'
+      if (child) {
+        newFiber = {
+          dom: child.dom,
+          parent: fiber,
+          child: null,
+          sibling: null,
+          type: child.type,
+          props: child.props,
+          alternate: null,
+          effectTag: 'PLACEMENT'
+        }
       }
       if (oldFiber) {
         // removeOldFiber(oldFiber)
@@ -83,7 +84,11 @@ const reconcileChildren = (fiber, children) => {
     } else {
       prev.sibling = newFiber
     }
-    prev = newFiber
+
+    if (newFiber) {
+      prev = newFiber
+    }
+
     oldFiber = oldFiber?.sibling || null
   })
   // 检测有没有兄弟节点需要删除 新的已经遍历完了, 看看旧的有没有剩的
@@ -102,7 +107,7 @@ const commitDelete = (fiber) => {
     while (parentFiber && !parentFiber.dom) {
       parentFiber = parentFiber.parent
     }
-    if (parentFiber.dom) {
+    if (parentFiber.dom && fiber.type) {
       parentFiber.dom.removeChild(fiber.dom)
     }
   }
@@ -133,7 +138,10 @@ const commitWork = (fiber) => {
   commitWork(fiber.sibling)
 }
 
+let wipFiber = null
+
 const updateFunctionComponent = (fiber) => {
+  wipFiber = fiber
   const children = [fiber.type(fiber.props)]
 
   // 创建链表
@@ -179,6 +187,11 @@ const workLoop = (IdleDeadline) => {
   shouldYield = false
   while (!shouldYield && nextUnitOfWork) {
     nextUnitOfWork = perWorkOfUnit(nextUnitOfWork)
+
+    if (wipRoot?.sibling?.type === nextUnitOfWork?.type) {
+      nextUnitOfWork = undefined
+    }
+
     shouldYield = IdleDeadline.timeRemaining() > 0
   }
   if (!nextUnitOfWork && wipRoot) {
@@ -194,12 +207,14 @@ requestIdleCallback(workLoop)
 
 // 更新
 const update = () => {
-  wipRoot = {
-    dom: currentRoot.dom,
-    props: currentRoot.props,
-    alternate: currentRoot
+  let currentFiber = wipFiber
+  return () => {
+    wipRoot = {
+      ...currentFiber,
+      alternate: currentFiber
+    }
+    nextUnitOfWork = wipRoot
   }
-  nextUnitOfWork = wipRoot
 }
 
 // work in progress wipRoot

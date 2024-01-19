@@ -1,30 +1,53 @@
 import React from './react/react.js'
 
-let showBar = true;
-function Counter() {
-  const bar = <div>bar</div>;
+let countFoo = 1
 
-  function handleShowBar() {
-    showBar = !showBar;
-    React.update();
+function Foo() {
+  console.log('foo rerun');
+  const update = React.update()
+
+  function handleClick() {
+    countFoo++
+    update()
   }
 
   return (
     <div>
-      Counter
-      {showBar && bar}
-      <button onClick={handleShowBar}>showBar</button>
+      <h1>Foo</h1>
+      {countFoo}
+      <button onClick={handleClick}>click</button>
     </div>
-  );
+  )
+}
+
+let countBar = 1
+
+function Bar() {
+  console.log('bar rerun');
+  const update = React.update()
+
+  function handleClick() {
+    countBar++
+    update()
+  }
+
+  return (
+    <div>
+      <h1>Bar</h1>
+      {countBar}
+      <button onClick={handleClick}>click</button>
+    </div>
+  )
 }
 
 function App() {
   return (
     <div>
-      hi-mini-react
-      <Counter></Counter>
+      <Foo />
+      <Bar />
     </div>
-  );
+  )
 }
+
 
 export default App
