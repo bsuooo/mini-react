@@ -1,50 +1,52 @@
 import React from './react/react.js'
 
-let countFoo = 1
-
 function Foo() {
-  console.log('foo rerun');
-  const update = React.update()
+  // const update = React.update()
+
+  const [countFoo, setCountFoo] = React.useState(1)
+
+  const [countBar, setCountBar] = React.useState('bar')
 
   function handleClick() {
-    countFoo++
-    update()
+    setCountFoo((countFoo) => countFoo + 1)
+    setCountBar((countBar) => 'barbar')
   }
 
   return (
     <div>
       <h1>Foo</h1>
-      {countFoo}
+      <div>{countFoo}</div>
+      <div>{countBar}</div>
       <button onClick={handleClick}>click</button>
     </div>
   )
 }
 
-let countBar = 1
+// let countBar = 1
 
-function Bar() {
-  console.log('bar rerun');
-  const update = React.update()
+// function Bar() {
+//   console.log('bar rerun');
+//   const update = React.update()
 
-  function handleClick() {
-    countBar++
-    update()
-  }
+//   function handleClick() {
+//     countBar++
+//     update()
+//   }
 
-  return (
-    <div>
-      <h1>Bar</h1>
-      {countBar}
-      <button onClick={handleClick}>click</button>
-    </div>
-  )
-}
+//   return (
+//     <div>
+//       <h1>Bar</h1>
+//       {countBar}
+//       <button onClick={handleClick}>click</button>
+//     </div>
+//   )
+// }
 
 function App() {
   return (
     <div>
       <Foo />
-      <Bar />
+      {/* <Bar /> */}
     </div>
   )
 }

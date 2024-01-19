@@ -141,6 +141,8 @@ const commitWork = (fiber) => {
 let wipFiber = null
 
 const updateFunctionComponent = (fiber) => {
+  fiber.stateHook = []
+  fiberHooksIndex = 0
   wipFiber = fiber
   const children = [fiber.type(fiber.props)]
 
@@ -230,10 +232,44 @@ const render = (el, container) => {
   nextUnitOfWork = wipRoot
 }
 
+let fiberHooksIndex
+const useState = (init) => {
+  let currentFiber = wipFiber
+  const oldFiber = currentFiber.alternate
+  const state = {
+    value: oldFiber?.stateHook[fiberHooksIndex] ? oldFiber?.stateHook[fiberHooksIndex]?.value : init,
+    queue: oldFiber?.stateHook[fiberHooksIndex]?.queue || []
+  }
+
+  state.queue.forEach(fn => {
+    state.value = fn(state.value)
+  })
+
+  state.queue.length = 0
+
+  fiberHooksIndex++
+  wipFiber.stateHook.push(state)
+  const setState = (fn) => {
+    const eagerState = typeof fn === 'function' ? fn(state.value) : fn
+    if (state.value === eagerState) {
+      return
+    }
+
+    state.queue.push(typeof fn === 'function' ? fn : () => fn)
+    wipRoot = {
+      ...currentFiber,
+      alternate: currentFiber
+    }
+    nextUnitOfWork = wipRoot
+  }
+  return [state.value, setState]
+}
+
 const React = {
   createElement,
   render,
-  update
+  update,
+  useState
 }
 
 export default React
