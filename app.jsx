@@ -1,8 +1,6 @@
 import React from './react/react.js'
 
 function Foo() {
-  // const update = React.update()
-
   const [countFoo, setCountFoo] = React.useState(1)
 
   const [countBar, setCountBar] = React.useState('bar')
@@ -11,6 +9,18 @@ function Foo() {
     setCountFoo((countFoo) => countFoo + 1)
     setCountBar((countBar) => 'barbar')
   }
+
+  React.useEffect(() => {
+    console.log('foo effect');
+  }, [])
+
+  React.useEffect(() => {
+    console.log('foo2 effect');
+    return () => {
+      console.log('foo2 cleanup');
+    }
+  }, [countFoo])
+
 
   return (
     <div>

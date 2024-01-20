@@ -117,7 +117,39 @@ const commitDelete = (fiber) => {
 const commitRoot = () => {
   deletions.forEach(commitDelete)
   deletions.length = 0
-  commitWork(wipRoot.child)
+  commitWork(wipRoot)
+  commitEffect(wipRoot)
+}
+
+const commitEffect = (fiber) => {
+  if (!fiber) {
+    return
+  }
+
+  fiber?.alternate?.effectHooks?.forEach((hook, index) => {
+    hook.cleanup && hook.cleanup()
+  })
+
+
+  if (!fiber.alternate) {
+    fiber?.effectHooks?.forEach(hook => {
+      const cleanup = hook.cb()
+      hook.cleanup = cleanup
+    })
+  } else {
+    if (fiber?.effectHooks?.deps?.length === 0) {
+      return
+    }
+    fiber?.effectHooks?.forEach((hook, index) => {
+      const isSame = hook?.deps.some((dep, i) => {
+        return dep !== fiber.alternate.effectHooks[i]?.deps[index]
+      })
+      isSame && (hook.cleanup = fiber?.effectHooks[index]?.cb())
+    })
+
+  }
+  commitEffect(fiber.child)
+  commitEffect(fiber.sibling)
 }
 
 const commitWork = (fiber) => {
@@ -142,6 +174,7 @@ let wipFiber = null
 
 const updateFunctionComponent = (fiber) => {
   fiber.stateHook = []
+  fiberEffectHooks = []
   fiberHooksIndex = 0
   wipFiber = fiber
   const children = [fiber.type(fiber.props)]
@@ -265,11 +298,25 @@ const useState = (init) => {
   return [state.value, setState]
 }
 
+let fiberEffectHooks
+function useEffect(cb, deps) {
+  let currentFiber = wipFiber
+  const state = {
+    cb: cb,
+    deps: deps
+  }
+
+  fiberEffectHooks.push(state)
+
+  currentFiber.effectHooks = fiberEffectHooks
+}
+
 const React = {
   createElement,
   render,
   update,
-  useState
+  useState,
+  useEffect
 }
 
 export default React
